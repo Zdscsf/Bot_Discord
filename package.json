@@ -1,7 +1,7 @@
 {
   "name": "mon-bot-discord",
   "version": "1.0.0",
-  "description": "Bot Discord simple déployé sur Render",
+  "description": "Bot Discord",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
