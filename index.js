@@ -15,6 +15,7 @@ const client = new Client({
 
 const SALON_ARRIVEE_ID = '1400085345260802208';
 const SALON_DEPART_ID = '1400085379016691762';
+const ROLE_ID_A_DONNER = '1399718805650931855';
 
 client.once('ready', () => {
   console.log('Bot est en ligne !');
@@ -28,22 +29,27 @@ client.on('messageCreate', message => {
 
 client.on('messageCreate', message => {
   if (message.content === '!zd') {
-    message.channel.send('good!');
+    message.channel.send('Nice!');
   }
 });
 
 
-client.on('guildMemberAdd', member => {
-  const channel = member.guild.channels.cache.get(SALON_ARRIVEE_ID);
-  if (channel) {
-    channel.send(`Bienvenue ${member.user.username} 👋`);
+client.on('guildMemberAdd', async member => {
+  const salonArrivee = member.guild.channels.cache.get(SALON_ARRIVEE_ID);
+  if (salonArrivee) {
+    salonArrivee.send(`Bienvenue <@${member.id}> 👋`);
+  }
+
+  const role = member.guild.roles.cache.get(ROLE_ID_A_DONNER);
+  if (role) {
+    await member.roles.add(role);
   }
 });
 
 client.on('guildMemberRemove', member => {
-  const channel = member.guild.channels.cache.get(SALON_DEPART_ID);
+  const salonDepart = member.guild.channels.cache.get(SALON_DEPART_ID);
   if (channel) {
-    channel.send(`${member.user.username} a quitté le serveur 😢`);
+    salonDepart.send(`<@${member.id}> a quitté le serveur 😢`);
   }
 });
 
