@@ -29,7 +29,7 @@ client.on('messageCreate', message => {
 
 client.on('messageCreate', message => {
   if (message.content === '!zd') {
-    message.channel.send('Nice!');
+    message.channel.send('ok!');
   }
 });
 
@@ -48,7 +48,7 @@ client.on('guildMemberAdd', async member => {
 
 client.on('guildMemberRemove', member => {
   const salonDepart = member.guild.channels.cache.get(SALON_DEPART_ID);
-  if (channel) {
+  if (salonDepart) {
     salonDepart.send(`<@${member.id}> a quitté le serveur 😢`);
   }
 });
