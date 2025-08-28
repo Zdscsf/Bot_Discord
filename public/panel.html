@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Panneau de configuration Bot</title>
+<style>
+body { font-family: Arial; margin: 20px; }
+label { display:block; margin:10px 0 5px; }
+input, select { width:100%; padding:8px; }
+button { margin-top:15px; padding:10px 15px; background:#4CAF50; color:white; border:none; cursor:pointer; }
+button:hover { background:#45a049; }
+</style>
+</head>
+<body>
+<h1>⚙️ Configuration du Bot</h1>
+<form id="configForm">
+  <label><input type="checkbox" name="welcomeEnabled" checked> Activer message de bienvenue</label>
+  <label><input type="checkbox" name="goodbyeEnabled" checked> Activer message de départ</label>
+  <label><input type="checkbox" name="roleEnabled" checked> Activer attribution de rôle</label>
+  <label>Salon arrivée (ID): <input type="text" name="welcomeChannel" value="1400085345260802208"></label>
+  <label>Salon départ (ID): <input type="text" name="goodbyeChannel" value="1400085379016691762"></label>
+  <label>ID du rôle: <input type="text" name="roleId" value="1399718805650931855"></label>
+  <input type="hidden" name="password" value="">
+  <button type="submit">Enregistrer</button>
+</form>
+<p id="status"></p>
+<script>
+const ADMIN_PASSWORD = prompt('Entrez le mot de passe admin :');
+document.querySelector('input[name="password"]').value = ADMIN_PASSWORD;
+
+document.getElementById('configForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const formData = new FormData(e.target);
+  const data = {};
+  formData.forEach((v,k)=> data[k] = (v === 'on') ? true : v);
+  const res = await fetch('/update-config', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(data)
+  });
+  const result = await res.json();
+  document.getElementById('status').textContent = '✅ Configuration mise à jour !';
+});
+</script>
+</body>
+</html>
