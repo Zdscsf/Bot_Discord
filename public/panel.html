@@ -7,7 +7,7 @@
 body { font-family: Arial; margin: 20px; }
 h3 { margin-top: 20px; }
 label { display:block; margin:10px 0 5px; }
-input, select { width:100%; padding:8px; }
+input { width:100%; padding:8px; }
 button { margin-top:15px; padding:10px 15px; background:#4CAF50; color:white; border:none; cursor:pointer; }
 button:hover { background:#45a049; }
 #status { margin-top:15px; color: green; font-weight: bold; }
@@ -16,13 +16,11 @@ button:hover { background:#45a049; }
 <body>
 <h1>⚙️ Configuration du Bot</h1>
 <form id="configForm">
-  <h3>Fonctions</h3>
-  <label><input type="checkbox" name="welcomeEnabled" checked> Activer message de bienvenue</label>
-  <label><input type="checkbox" name="goodbyeEnabled" checked> Activer message de départ</label>
-  <label><input type="checkbox" name="roleEnabled" checked> Activer attribution de rôle</label>
-
-  <h3>Commandes</h3>
-  <label><input type="checkbox" name="pingEnabled" checked> Activer commande !ping</label>
+  <h3>Fonctions (true/false)</h3>
+  <label>Activer message de bienvenue: <input type="text" name="welcomeEnabled" value="true"></label>
+  <label>Activer message de départ: <input type="text" name="goodbyeEnabled" value="true"></label>
+  <label>Activer attribution de rôle: <input type="text" name="roleEnabled" value="true"></label>
+  <label>Activer commande !ping: <input type="text" name="pingEnabled" value="true"></label>
 
   <h3>IDs</h3>
   <label>Salon arrivée (ID): <input type="text" name="welcomeChannel" value="1400085345260802208"></label>
@@ -43,9 +41,9 @@ document.getElementById('configForm').addEventListener('submit', async e => {
   const formData = new FormData(e.target);
   const data = {};
   formData.forEach((v,k) => {
-    const el = document.querySelector(`[name="${k}"]`);
-    if (el && el.type === 'checkbox') {
-      data[k] = el.checked; // true ou false selon la case
+    // Convertir true/false texte en booléen pour le bot
+    if(['welcomeEnabled','goodbyeEnabled','roleEnabled','pingEnabled'].includes(k)){
+      data[k] = v.toLowerCase() === 'true';
     } else {
       data[k] = v;
     }
