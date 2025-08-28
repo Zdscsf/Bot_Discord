@@ -1,7 +1,15 @@
 require('dotenv').config();
 if (config.features.goodbye && config.ids.salonDepart && member.guild) {
 try {
-const salonDepart = member.guild.channels.cache.get(config.ids.salonDepart) || await member.guild.channels.fetch(config.ids.salonDepart).catch(() => null);
+client.on('guildMemberRemove', async member => {
+  const salonDepart = member.guild.channels.cache.get(config.ids.salonDepart)
+    || await member.guild.channels.fetch(config.ids.salonDepart).catch(() => null);
+
+  if (salonDepart) {
+    salonDepart.send(`<@${member.id}> a quitté le serveur 😢`);
+  }
+});
+
 if (salonDepart && salonDepart.isTextBased()) {
 await salonDepart.send(`<@${member.id}> a quitté le serveur 😢`);
 }
