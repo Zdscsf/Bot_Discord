@@ -11,7 +11,14 @@ client.on('guildMemberRemove', async member => {
 });
 
 if (salonDepart && salonDepart.isTextBased()) {
-await salonDepart.send(`<@${member.id}> a quitté le serveur 😢`);
+client.on('guildMemberRemove', async (member) => {
+  const salonDepart = member.guild.channels.cache.get(config.ids.salonDepart)
+    || await member.guild.channels.fetch(config.ids.salonDepart).catch(() => null);
+
+  if (salonDepart) {
+    await salonDepart.send(`<@${member.id}> a quitté le serveur 😢`);
+  }
+});
 }
 } catch (err) {
 console.error('[GOODBYE] Erreur envoi message départ:', err.message);
