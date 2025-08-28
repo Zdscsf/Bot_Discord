@@ -19,7 +19,8 @@ let config = {
   roleEnabled: true,
   welcomeChannel: '1400085345260802208',
   goodbyeChannel: '1400085379016691762',
-  roleId: '1399718805650931855'
+  roleId: '1399718805650931855',
+  pingEnabled: true // toggle pour !ping
 };
 
 // ----------- BOT DISCORD -----------
@@ -37,8 +38,12 @@ client.once('ready', () => {
 });
 
 client.on('messageCreate', message => {
-  if (message.content === '!ping') message.channel.send('Pong!');
-  if (message.content === '!zd') message.channel.send('ok!');
+  if (config.pingEnabled && message.content === '!ping') {
+    message.channel.send('Pong!');
+  }
+  if (message.content === '!zd') {
+    message.channel.send('ok!');
+  }
 });
 
 client.on('guildMemberAdd', async member => {
