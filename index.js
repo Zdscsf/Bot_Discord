@@ -1,99 +1,79 @@
-require('dotenv').config();
-if (config.features.goodbye && config.ids.salonDepart && member.guild) {
-try {
-client.on('guildMemberRemove', async member => {
-  const salonDepart = member.guild.channels.cache.get(config.ids.salonDepart)
-    || await member.guild.channels.fetch(config.ids.salonDepart).catch(() => null);
+const { Client, GatewayIntentBits } = require('discord.js');
+const express = require('express');
+const bodyParser = require('body-parser');
+const config = require('./config.json');
 
-  if (salonDepart) {
-    salonDepart.send(`<@${member.id}> a quitté le serveur 😢`);
-  }
+
+const client = new Client({
+intents: [
+GatewayIntentBits.Guilds,
+GatewayIntentBits.GuildMessages,
+GatewayIntentBits.GuildMembers,
+GatewayIntentBits.MessageContent
+]
 });
 
-if (salonDepart && salonDepart.isTextBased()) {
+
+// Variables pour stocker les options activées
+let features = {
+welcome: true,
+goodbye: true
+};
+
+
+client.once('ready', () => {
+console.log(`✅ Connecté en tant que ${client.user.tag}`);
+});
+
+
+// Listener: arrivée d'un membre
+client.on('guildMemberAdd', async (member) => {
+if (!features.welcome) return;
+
+
+const salonArrivee = member.guild.channels.cache.get(config.ids.salonArrivee)
+|| await member.guild.channels.fetch(config.ids.salonArrivee).catch(() => null);
+
+
+if (salonArrivee) {
+await salonArrivee.send(`Bienvenue <@${member.id}> sur le serveur ! 🎉`);
+}
+});
+
+
+// Listener: départ d'un membre
 client.on('guildMemberRemove', async (member) => {
-  const salonDepart = member.guild.channels.cache.get(config.ids.salonDepart)
-    || await member.guild.channels.fetch(config.ids.salonDepart).catch(() => null);
+if (!features.goodbye) return;
 
-  if (salonDepart) {
-    await salonDepart.send(`<@${member.id}> a quitté le serveur 😢`);
-  }
-});
-}
-} catch (err) {
-console.error('[GOODBYE] Erreur envoi message départ:', err.message);
-}
+
+const salonDepart = member.guild.channels.cache.get(config.ids.salonDepart)
+|| await member.guild.channels.fetch(config.ids.salonDepart).catch(() => null);
+
+
+if (salonDepart) {
+await salonDepart.send(`<@${member.id}> a quitté le serveur 😢`);
 }
 });
 
 
-// ====== Connexion Discord ======
-client.login(process.env.DISCORD_TOKEN).catch((e) => {
-console.error('[DISCORD] Échec de connexion :', e.message);
-process.exit(1);
+// === Panneau de configuration ===
+const app = express();
+app.use(bodyParser.urlencoded({ extended: true }));
+
+
+// Page principale
+app.get('/', (req, res) => {
+res.send(`
+<h1>Panneau de configuration du Bot</h1>
+<form method="POST" action="/update">
+<label>
+<input type="checkbox" name="welcome" ${features.welcome ? 'checked' : ''}/> Activer messages de bienvenue
+</label><br><br>
+<label>
+<input type="checkbox" name="goodbye" ${features.goodbye ? 'checked' : ''}/> Activer messages de départ
+</label><br><br>
+<button type="submit">Enregistrer</button>
+</form>
+`);
 });
-
-
-// ====== API & Panneau de configuration ======
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-
-// --- Auth basique par Bearer token sur /api ---
-const requireAuth = (req, res, next) => {
-const auth = req.headers['authorization'] || '';
-const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
-if (!process.env.ADMIN_TOKEN) {
-return res.status(500).json({ error: 'ADMIN_TOKEN non configuré sur le serveur' });
-}
-if (token === process.env.ADMIN_TOKEN) return next();
-return res.status(401).json({ error: 'Non autorisé' });
-};
-
-
-// Servir l'UI
-app.use(express.static(path.join(__dirname, 'public')));
-
-
-// Healthcheck simple (utile pour Render)
-app.get('/health', (_req, res) => res.send('ok'));
-
-
-// --- Routes API protégées ---
-app.get('/api/config', requireAuth, (req, res) => {
-res.json(config);
-});
-
-
-app.put('/api/config', requireAuth, (req, res) => {
-try {
-const incoming = req.body || {};
-// Validation/merge simple et sécurisée
-const merged = {
-features: {
-ping: Boolean(incoming?.features?.ping ?? config.features.ping),
-zd: Boolean(incoming?.features?.zd ?? config.features.zd),
-welcome: Boolean(incoming?.features?.welcome ?? config.features.welcome),
-goodbye: Boolean(incoming?.features?.goodbye ?? config.features.goodbye),
-},
-ids: {
-salonArrivee: String(incoming?.ids?.salonArrivee ?? config.ids.salonArrivee),
-salonDepart: String(incoming?.ids?.salonDepart ?? config.ids.salonDepart),
-roleId: String(incoming?.ids?.roleId ?? config.ids.roleId),
-}
-};
-config = merged;
-saveConfig();
-res.json({ status: 'ok', config });
-} catch (e) {
-console.error('[API] Erreur maj config:', e);
-res.status(400).json({ error: 'Payload invalide' });
-}
-});
-
-
-// Démarrage HTTP
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-console.log(`[HTTP] Panel sur port ${PORT}`);
-});
+client.login(process.env.TOKEN);
