@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Panel Bot Discord</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?
+family=Inter:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root { --bg:#0b0f14; --card:#121826; --muted:#94a3b8; --text:#e2e8f0; --
+accent:#22c55e; }
+*{ box-sizing:border-box; }
+body{ margin:0; font-family:Inter,system-ui,Segoe UI,Roboto,Arial;
+background:linear-gradient(180deg,#0b0f14,#0d1320); color:var(--text); }
+.wrap{ max-width:900px; margin:40px auto; padding:24px; }
+.card{ background:var(--card); border-radius:16px; padding:24px; boxshadow:0 10px 30px rgba(0,0,0,.25); }
+h1{ margin:0 0 8px; font-size:28px; }
+p.muted{ color:var(--muted); margin:0 0 24px; }
+.grid{ display:grid; gap:16px; grid-template-columns:repeat(autofit,minmax(260px,1fr)); }
+5
+.field{ background:#0f1629; padding:16px; border-radius:12px; }
+label{ display:block; font-weight:600; margin-bottom:8px; }
+input[type="text"], input[type="password"]{ width:100%; padding:10px
+12px; border-radius:10px; border:1px solid #1f2a44; background:#0c1323;
+color:var(--text); }
+.row{ display:flex; align-items:center; justify-content:space-between;
+gap:12px; }
+.switch{ display:flex; align-items:center; gap:10px; }
+button{ cursor:pointer; border:0; border-radius:12px; padding:12px 16px;
+font-weight:600; }
+.primary{ background:var(--accent); color:#052e16; }
+.ghost{ background:transparent; color:var(--muted); border:1px solid
+#1f2a44; }
+.footer{ display:flex; gap:12px; margin-top:16px; }
+.notice{ color:#a7f3d0; margin-left:8px; font-size:14px; }
+.error{ color:#fecaca; font-size:14px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="card">
+<h1>Panel de configuration</h1>
+<p class="muted">Gérez les fonctionnalités et les identifiants sans
+redéployer.
+<span id="status" class="notice"></span>
+</p>
+<div class="field">
+<label>Token d'administration</label>
+<div class="row">
+<input type="password" id="adminToken" placeholder="ADMIN_TOKEN" />
+<button class="ghost" id="saveToken">Utiliser</button>
+</div>
+<div id="authError" class="error"></div>
+</div>
+<div class="grid">
+<div class="field">
+<label>Fonctionnalités</label>
+<div class="switch"><input type="checkbox" id="f_ping">
+<span>Activer !ping</span></div>
+<div class="switch"><input type="checkbox" id="f_zd">
+<span>Activer !zd</span></div>
+<div class="switch"><input type="checkbox" id="f_welcome"> <span>Message
+d'arrivée</span></div>
+<div class="switch"><input type="checkbox" id="f_goodbye"> <span>Message
+de départ</span></div>
+</div>
+<div class="field">
+<label>Identifiants Discord (IDs)</label>
+<div style="display:grid; gap:10px;">
+6
+<input type="text" id="id_arrivee" placeholder="ID salon
+d'arrivée" />
+<input type="text" id="id_depart" placeholder="ID salon de
+départ" />
+<input type="text" id="id_role" placeholder="ID du rôle à
+donner" />
+</div>
+</div>
+</div>
+<div class="footer">
+<button class="primary" id="saveBtn">Enregistrer</button>
+<button class="ghost" id="reloadBtn">Recharger</button>
+</div>
+</div>
+</div>
+<script>
+const $ = (id) => document.getElementById(id);
+const API = {
+async getConfig() {
+const r = await fetch('/api/config', { headers: authHeader() });
+if (!r.ok) throw new Error('Auth ou serveur');
+return r.json();
+},
+async putConfig(data) {
+const r = await fetch('/api/config', {
+method: 'PUT',
+headers: { 'Content-Type': 'application/json', ...authHeader() },
+body: JSON.stringify(data)
+});
+if (!r.ok) throw new Error('Échec sauvegarde');
+return r.json();
+}
+};
+function authHeader() {
+const token = localStorage.getItem('ADMIN_TOKEN') || '';
+return token ? { Authorization: `Bearer ${token}` } : {};
+}
+async function load() {
+try {
+$('status').textContent = 'Chargement…';
+const cfg = await API.getConfig();
+$('f_ping').checked = !!cfg.features.ping;
+$('f_zd').checked = !!cfg.features.zd;
+$('f_welcome').checked = !!cfg.features.welcome;
+$('f_goodbye').checked = !!cfg.features.goodbye;
+$('id_arrivee').value = cfg.ids.salonArrivee || '';
+$('id_depart').value = cfg.ids.salonDepart || '';
+7
+$('id_role').value = cfg.ids.roleId || '';
+$('authError').textContent = '';
+$('status').textContent = 'Prêt';
+} catch (e) {
+$('authError').textContent = 'Accès refusé ou serveur indisponible.';
+$('status').textContent = '';
+}
+}
+async function save() {
+const data = {
+features: {
+ping: $('f_ping').checked,
+zd: $('f_zd').checked,
+welcome: $('f_welcome').checked,
+goodbye: $('f_goodbye').checked,
+},
+ids: {
+salonArrivee: $('id_arrivee').value.trim(),
+salonDepart: $('id_depart').value.trim(),
+roleId: $('id_role').value.trim(),
+}
+};
+$('status').textContent = 'Sauvegarde…';
+try {
+await API.putConfig(data);
+$('status').textContent = 'Sauvegardé ';
+setTimeout(()=> $('status').textContent = 'Prêt', 1500);
+} catch (e) {
+$('status').textContent = '';
+alert('Erreur lors de la sauvegarde');
+}
+}
+$('saveBtn').addEventListener('click', save);
+$('reloadBtn').addEventListener('click', load);
+$('saveToken').addEventListener('click', () => {
+const t = $('adminToken').value.trim();
+localStorage.setItem('ADMIN_TOKEN', t);
+load();
+});
+// Pré-remplir depuis localStorage
+$('adminToken').value = localStorage.getItem('ADMIN_TOKEN') || '';
+load();
+</script>
+</body>
+</html>
