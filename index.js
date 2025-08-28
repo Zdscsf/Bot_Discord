@@ -1,65 +1,84 @@
 require('dotenv').config();
-
-const { Client, GatewayIntentBits } = require('discord.js');
-const express = require('express');
-const app = express();
-
-const client = new Client({
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent,
-    GatewayIntentBits.GuildMembers,
-  ],
-});
-
-const SALON_ARRIVEE_ID = '1400085345260802208';
-const SALON_DEPART_ID = '1400085379016691762';
-const ROLE_ID_A_DONNER = '1399718805650931855';
-
-client.once('ready', () => {
-  console.log('Bot est en ligne !');
-});
-
-client.on('messageCreate', message => {
-  if (message.content === '!ping') {
-    message.channel.send('Pong!');
-  }
-});
-
-client.on('messageCreate', message => {
-  if (message.content === '!zd') {
-    message.channel.send('ok!');
-  }
+if (config.features.goodbye && config.ids.salonDepart && member.guild) {
+try {
+const salonDepart = member.guild.channels.cache.get(config.ids.salonDepart) || await member.guild.channels.fetch(config.ids.salonDepart).catch(() => null);
+if (salonDepart && salonDepart.isTextBased()) {
+await salonDepart.send(`<@${member.id}> a quitté le serveur 😢`);
+}
+} catch (err) {
+console.error('[GOODBYE] Erreur envoi message départ:', err.message);
+}
+}
 });
 
 
-client.on('guildMemberAdd', async member => {
-  const salonArrivee = member.guild.channels.cache.get(SALON_ARRIVEE_ID);
-  if (salonArrivee) {
-    salonArrivee.send(`Bienvenue <@${member.id}> 👋`);
-  }
-
-  const role = member.guild.roles.cache.get(ROLE_ID_A_DONNER);
-  if (role) {
-    await member.roles.add(role);
-  }
+// ====== Connexion Discord ======
+client.login(process.env.DISCORD_TOKEN).catch((e) => {
+console.error('[DISCORD] Échec de connexion :', e.message);
+process.exit(1);
 });
 
-client.on('guildMemberRemove', member => {
-  const salonDepart = member.guild.channels.cache.get(SALON_DEPART_ID);
-  if (salonDepart) {
-    salonDepart.send(`<@${member.id}> a quitté le serveur 😢`);
-  }
+
+// ====== API & Panneau de configuration ======
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+
+// --- Auth basique par Bearer token sur /api ---
+const requireAuth = (req, res, next) => {
+const auth = req.headers['authorization'] || '';
+const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
+if (!process.env.ADMIN_TOKEN) {
+return res.status(500).json({ error: 'ADMIN_TOKEN non configuré sur le serveur' });
+}
+if (token === process.env.ADMIN_TOKEN) return next();
+return res.status(401).json({ error: 'Non autorisé' });
+};
+
+
+// Servir l'UI
+app.use(express.static(path.join(__dirname, 'public')));
+
+
+// Healthcheck simple (utile pour Render)
+app.get('/health', (_req, res) => res.send('ok'));
+
+
+// --- Routes API protégées ---
+app.get('/api/config', requireAuth, (req, res) => {
+res.json(config);
 });
 
-client.login(process.env.DISCORD_TOKEN);
 
-// Serveur Web
+app.put('/api/config', requireAuth, (req, res) => {
+try {
+const incoming = req.body || {};
+// Validation/merge simple et sécurisée
+const merged = {
+features: {
+ping: Boolean(incoming?.features?.ping ?? config.features.ping),
+zd: Boolean(incoming?.features?.zd ?? config.features.zd),
+welcome: Boolean(incoming?.features?.welcome ?? config.features.welcome),
+goodbye: Boolean(incoming?.features?.goodbye ?? config.features.goodbye),
+},
+ids: {
+salonArrivee: String(incoming?.ids?.salonArrivee ?? config.ids.salonArrivee),
+salonDepart: String(incoming?.ids?.salonDepart ?? config.ids.salonDepart),
+roleId: String(incoming?.ids?.roleId ?? config.ids.roleId),
+}
+};
+config = merged;
+saveConfig();
+res.json({ status: 'ok', config });
+} catch (e) {
+console.error('[API] Erreur maj config:', e);
+res.status(400).json({ error: 'Payload invalide' });
+}
+});
+
+
+// Démarrage HTTP
 const PORT = process.env.PORT || 3000;
-app.get('/', (req, res) => {
-  res.send('Bot Discord en ligne');
-});
 app.listen(PORT, () => {
-  console.log(`Serveur HTTP écoute sur le port ${PORT}`);
+console.log(`[HTTP] Panel sur port ${PORT}`);
 });
