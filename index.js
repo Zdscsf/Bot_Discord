@@ -1,79 +1,89 @@
+require('dotenv').config();
 const { Client, GatewayIntentBits } = require('discord.js');
 const express = require('express');
 const bodyParser = require('body-parser');
-const config = require('./config.json');
+const path = require('path');
 
-
-const client = new Client({
-intents: [
-GatewayIntentBits.Guilds,
-GatewayIntentBits.GuildMessages,
-GatewayIntentBits.GuildMembers,
-GatewayIntentBits.MessageContent
-]
-});
-
-
-// Variables pour stocker les options activées
-let features = {
-welcome: true,
-goodbye: true
-};
-
-
-client.once('ready', () => {
-console.log(`✅ Connecté en tant que ${client.user.tag}`);
-});
-
-
-// Listener: arrivée d'un membre
-client.on('guildMemberAdd', async (member) => {
-if (!features.welcome) return;
-
-
-const salonArrivee = member.guild.channels.cache.get(config.ids.salonArrivee)
-|| await member.guild.channels.fetch(config.ids.salonArrivee).catch(() => null);
-
-
-if (salonArrivee) {
-await salonArrivee.send(`Bienvenue <@${member.id}> sur le serveur ! 🎉`);
-}
-});
-
-
-// Listener: départ d'un membre
-client.on('guildMemberRemove', async (member) => {
-if (!features.goodbye) return;
-
-
-const salonDepart = member.guild.channels.cache.get(config.ids.salonDepart)
-|| await member.guild.channels.fetch(config.ids.salonDepart).catch(() => null);
-
-
-if (salonDepart) {
-await salonDepart.send(`<@${member.id}> a quitté le serveur 😢`);
-}
-});
-
-
-// === Panneau de configuration ===
 const app = express();
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json());
 
+// Fichiers statiques (CSS/JS)
+app.use(express.static(path.join(__dirname, 'public')));
 
-// Page principale
-app.get('/', (req, res) => {
-res.send(`
-<h1>Panneau de configuration du Bot</h1>
-<form method="POST" action="/update">
-<label>
-<input type="checkbox" name="welcome" ${features.welcome ? 'checked' : ''}/> Activer messages de bienvenue
-</label><br><br>
-<label>
-<input type="checkbox" name="goodbye" ${features.goodbye ? 'checked' : ''}/> Activer messages de départ
-</label><br><br>
-<button type="submit">Enregistrer</button>
-</form>
-`);
+// Variables de configuration dynamiques
+let config = {
+  welcomeEnabled: true,
+  goodbyeEnabled: true,
+  roleEnabled: true,
+  welcomeChannel: '1400085345260802208',
+  goodbyeChannel: '1400085379016691762',
+  roleId: '1399718805650931855'
+};
+
+// ----------- DISCORD BOT -----------
+const client = new Client({
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent,
+    GatewayIntentBits.GuildMembers
+  ]
 });
-client.login(process.env.TOKEN);
+
+client.once('ready', () => {
+  console.log('✅ Bot en ligne !');
+});
+
+client.on('messageCreate', message => {
+  if (message.content === '!ping') {
+    message.channel.send('Pong!');
+  }
+  if (message.content === '!zd') {
+    message.channel.send('ok!');
+  }
+});
+
+client.on('guildMemberAdd', async member => {
+  if (config.welcomeEnabled) {
+    const salonArrivee = member.guild.channels.cache.get(config.welcomeChannel);
+    if (salonArrivee) {
+      salonArrivee.send(`Bienvenue <@${member.id}> 👋`);
+    }
+  }
+
+  if (config.roleEnabled) {
+    const role = member.guild.roles.cache.get(config.roleId);
+    if (role) {
+      await member.roles.add(role);
+    }
+  }
+});
+
+client.on('guildMemberRemove', member => {
+  if (config.goodbyeEnabled) {
+    const salonDepart = member.guild.channels.cache.get(config.goodbyeChannel);
+    if (salonDepart) {
+      salonDepart.send(`<@${member.id}> a quitté le serveur 😢`);
+    }
+  }
+});
+
+client.login(process.env.DISCORD_TOKEN);
+
+// ----------- INTERFACE WEB -----------
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+app.post('/update-config', (req, res) => {
+  config = { ...config, ...req.body };
+  console.log('✅ Nouvelle configuration :', config);
+  res.json({ success: true, config });
+});
+
+// ----------- DEMARRAGE SERVEUR -----------
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`✅ Serveur HTTP écoute sur le port ${PORT}`);
+});
