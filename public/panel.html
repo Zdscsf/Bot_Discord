@@ -14,12 +14,19 @@ button:hover { background:#45a049; }
 <body>
 <h1>⚙️ Configuration du Bot</h1>
 <form id="configForm">
+  <h3>Fonctions</h3>
   <label><input type="checkbox" name="welcomeEnabled" checked> Activer message de bienvenue</label>
   <label><input type="checkbox" name="goodbyeEnabled" checked> Activer message de départ</label>
   <label><input type="checkbox" name="roleEnabled" checked> Activer attribution de rôle</label>
+
+  <h3>Commandes</h3>
+  <label><input type="checkbox" name="pingEnabled" checked> Activer commande !ping</label>
+
+  <h3>IDs</h3>
   <label>Salon arrivée (ID): <input type="text" name="welcomeChannel" value="1400085345260802208"></label>
   <label>Salon départ (ID): <input type="text" name="goodbyeChannel" value="1400085379016691762"></label>
   <label>ID du rôle: <input type="text" name="roleId" value="1399718805650931855"></label>
+
   <input type="hidden" name="password" value="">
   <button type="submit">Enregistrer</button>
 </form>
