@@ -1,0 +1,13 @@
+{
+  "features": {
+    "ping": true,
+    "zd": true,
+    "welcome": true,
+    "goodbye": true
+  },
+  "ids": {
+    "salonArrivee": "1400085345260802208",
+    "salonDepart": "1400085379016691762",
+    "roleId": "1399718805650931855"
+  }
+}
