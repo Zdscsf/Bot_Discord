@@ -5,10 +5,12 @@
 <title>Panneau de configuration Bot</title>
 <style>
 body { font-family: Arial; margin: 20px; }
+h3 { margin-top: 20px; }
 label { display:block; margin:10px 0 5px; }
 input, select { width:100%; padding:8px; }
 button { margin-top:15px; padding:10px 15px; background:#4CAF50; color:white; border:none; cursor:pointer; }
 button:hover { background:#45a049; }
+#status { margin-top:15px; color: green; font-weight: bold; }
 </style>
 </head>
 <body>
@@ -31,6 +33,7 @@ button:hover { background:#45a049; }
   <button type="submit">Enregistrer</button>
 </form>
 <p id="status"></p>
+
 <script>
 const ADMIN_PASSWORD = prompt('Entrez le mot de passe admin :');
 document.querySelector('input[name="password"]').value = ADMIN_PASSWORD;
@@ -39,14 +42,30 @@ document.getElementById('configForm').addEventListener('submit', async e => {
   e.preventDefault();
   const formData = new FormData(e.target);
   const data = {};
-  formData.forEach((v,k)=> data[k] = (v === 'on') ? true : v);
-  const res = await fetch('/update-config', {
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body: JSON.stringify(data)
+  formData.forEach((v,k) => {
+    const el = document.querySelector(`[name="${k}"]`);
+    if (el && el.type === 'checkbox') {
+      data[k] = el.checked; // true ou false selon la case
+    } else {
+      data[k] = v;
+    }
   });
-  const result = await res.json();
-  document.getElementById('status').textContent = '✅ Configuration mise à jour !';
+
+  try {
+    const res = await fetch('/update-config', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(data)
+    });
+    const result = await res.json();
+    if(result.success){
+      document.getElementById('status').textContent = '✅ Configuration mise à jour !';
+    } else {
+      document.getElementById('status').textContent = '❌ Erreur lors de la mise à jour.';
+    }
+  } catch(err) {
+    document.getElementById('status').textContent = '❌ Erreur réseau.';
+  }
 });
 </script>
 </body>
